@@ -2,15 +2,29 @@ import React, { useState } from 'react';
 import { Plus, Search, Filter, Calendar, Clock, Tag, Edit, Trash2 } from 'lucide-react';
 import { useWorkLogs, WorkLog } from '../contexts/WorkLogContext';
 import WorkLogModal from '../components/WorkLogModal';
+import QuickLogWidget from '../components/QuickLogWidget';
+import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 
 const WorkLogs: React.FC = () => {
   const { workLogs, deleteWorkLog } = useWorkLogs();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQuickLogOpen, setIsQuickLogOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<WorkLog | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [dateFilter, setDateFilter] = useState<string>('');
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onQuickLog: () => setIsQuickLogOpen(true),
+    onToggleSearch: () => {
+      const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+      if (searchInput) {
+        searchInput.focus();
+      }
+    }
+  });
 
   // Get unique tags and types for filters
   const allTags = Array.from(new Set(workLogs.flatMap(log => log.tags)));
@@ -82,13 +96,21 @@ const WorkLogs: React.FC = () => {
             <h1 className="text-3xl font-bold text-slate-100 mb-2">Work Logs</h1>
             <p className="text-slate-400">Track and manage your daily work activities.</p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Add Work Log</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setIsQuickLogOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Quick Log</span>
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+            >
+              <span>Detailed Log</span>
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -246,6 +268,13 @@ const WorkLogs: React.FC = () => {
             editingLog={editingLog}
           />
         )}
+
+        {/* Quick Log Widget */}
+        <QuickLogWidget
+          isOpen={isQuickLogOpen}
+          onClose={() => setIsQuickLogOpen(false)}
+          onToggle={() => setIsQuickLogOpen(!isQuickLogOpen)}
+        />
       </div>
     </div>
   );

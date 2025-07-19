@@ -6,10 +6,25 @@ import StatsCard from '../components/StatsCard';
 import RecentWorkLogs from '../components/RecentWorkLogs';
 import GoalProgress from '../components/GoalProgress';
 import WeeklyChart from '../components/WeeklyChart';
+import DailyTimeline from '../components/DailyTimeline';
+import SmartSuggestions from '../components/SmartSuggestions';
+import QuickLogWidget from '../components/QuickLogWidget';
+import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 
 const Dashboard: React.FC = () => {
   const { workLogs } = useWorkLogs();
   const { goals, getActiveGoals } = useGoals();
+  const [isQuickLogOpen, setIsQuickLogOpen] = React.useState(false);
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onQuickLog: () => setIsQuickLogOpen(true),
+    onStartTimer: () => {
+      // Navigate to timer page or open timer modal
+      window.location.href = '/timer';
+    }
+  });
 
   // Calculate stats
   const today = new Date();
@@ -29,13 +44,34 @@ const Dashboard: React.FC = () => {
   const activeGoals = getActiveGoals();
   const completedTasks = workLogs.length;
 
+  const handleSuggestionSelect = (suggestion: any) => {
+    // Auto-fill quick log with suggestion
+    setIsQuickLogOpen(true);
+    // You could pass the suggestion data to the QuickLogWidget
+  };
+
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-100 mb-2">Dashboard</h1>
-          <p className="text-slate-400">Welcome back! Here's your productivity overview.</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-100 mb-2">Dashboard</h1>
+              <p className="text-slate-400">Welcome back! Here's your productivity overview.</p>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-slate-400">
+                💡 Press <kbd className="bg-slate-700 px-2 py-1 rounded text-xs">Ctrl+L</kbd> to quick log
+              </div>
+              <div className="text-sm text-slate-400 mt-1">
+                ⏱️ Press <kbd className="bg-slate-700 px-2 py-1 rounded text-xs">Ctrl+T</kbd> for timer
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Smart Suggestions */}
+        <SmartSuggestions onSelectSuggestion={handleSuggestionSelect} />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -70,9 +106,9 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Weekly Chart */}
-          <div className="lg:col-span-2">
+          <div>
             <div className="bg-slate-800 rounded-xl p-6">
               <h2 className="text-lg font-semibold text-slate-100 mb-4">Weekly Activity</h2>
               <WeeklyChart />
@@ -88,13 +124,25 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Daily Timeline */}
+        <div className="mb-6">
+          <DailyTimeline selectedDate={selectedDate} />
+        </div>
+
         {/* Recent Work Logs */}
-        <div className="mt-6">
+        <div>
           <div className="bg-slate-800 rounded-xl p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Recent Work Logs</h2>
             <RecentWorkLogs />
           </div>
         </div>
+
+        {/* Quick Log Widget */}
+        <QuickLogWidget
+          isOpen={isQuickLogOpen}
+          onClose={() => setIsQuickLogOpen(false)}
+          onToggle={() => setIsQuickLogOpen(!isQuickLogOpen)}
+        />
       </div>
     </div>
   );
