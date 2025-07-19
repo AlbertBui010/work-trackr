@@ -30,7 +30,11 @@
     "enterEmail": "Enter your email",
     "enterPassword": "Enter your password",
     "signingIn": "Signing in...",
-    "demoCredentials": "Demo credentials: Any email and password will work"
+    "demoCredentials": "Demo credentials: Any email and password will work",
+    "error": "Authentication Error",
+    "backToLogin": "Back to Login",
+    "processing": "Processing...",
+    "completingLogin": "Completing your login..."
   },
   "navigation": {
     "dashboard": "Dashboard",

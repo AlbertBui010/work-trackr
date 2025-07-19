@@ -30,7 +30,11 @@
     "enterEmail": "Nhập email của bạn",
     "enterPassword": "Nhập mật khẩu",
     "signingIn": "Đang đăng nhập...",
-    "demoCredentials": "Thông tin demo: Bất kỳ email và mật khẩu nào đều hoạt động"
+    "demoCredentials": "Thông tin demo: Bất kỳ email và mật khẩu nào đều hoạt động",
+    "error": "Lỗi Xác Thực",
+    "backToLogin": "Quay Lại Đăng Nhập",
+    "processing": "Đang Xử Lý...",
+    "completingLogin": "Hoàn tất đăng nhập..."
   },
   "navigation": {
     "dashboard": "Bảng điều khiển",

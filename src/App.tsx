@@ -14,6 +14,7 @@ import Goals from './pages/Goals';
 import Analytics from './pages/Analytics';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
+import AuthCallback from './pages/AuthCallback';
 import './i18n';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
                 <Router>
                   <Routes>
                     <Route path="/login" element={<Login />} />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
                     <Route path="/" element={
                       <ProtectedRoute>
                         <Layout>
