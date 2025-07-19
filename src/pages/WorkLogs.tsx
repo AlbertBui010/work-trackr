@@ -254,7 +254,6 @@ const WorkLogs: React.FC = () => {
             {t('performance.endOfResults')}
           </div>
         )}
-        </div>
 
         {/* Work Log Modal */}
         {isModalOpen && (

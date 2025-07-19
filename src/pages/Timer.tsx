@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Square, RotateCcw, Settings } from 'lucide-react';
+import { Play, Pause, Square, RotateCcw, Settings, Music } from 'lucide-react';
 import { useWorkLogs } from '../contexts/WorkLogContext';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { supabase } from '../lib/supabase';
+import MusicPlayer from '../components/MusicPlayer';
+import { musicService, Playlist } from '../services/musicService';
 
 const Timer: React.FC = () => {
   const [mode, setMode] = useState<'pomodoro' | 'custom'>('pomodoro');
@@ -9,6 +13,11 @@ const Timer: React.FC = () => {
   const [customMinutes, setCustomMinutes] = useState(25);
   const [isBreak, setIsBreak] = useState(false);
   const [cycles, setCycles] = useState(0);
+  const [showMusicPlayer, setShowMusicPlayer] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(0.5);
+  const [currentPlaylist, setCurrentPlaylist] = useState<Playlist | null>(null);
+  const [userPreferences, setUserPreferences] = useState<any>(null);
   const [sessionData, setSessionData] = useState({
     title: '',
     description: '',
@@ -18,7 +27,40 @@ const Timer: React.FC = () => {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { addWorkLog } = useWorkLogs();
+  const { user } = useSupabaseAuth();
 
+  // Load user preferences
+  useEffect(() => {
+    if (user) {
+      loadUserPreferences();
+    }
+  }, [user]);
+
+  const loadUserPreferences = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setUserPreferences(data);
+        setMusicVolume(data.music_volume);
+        setShowMusicPlayer(data.music_enabled);
+        
+        // Set custom durations
+        if (mode === 'custom') {
+          setCustomMinutes(data.pomodoro_duration);
+          setTimeLeft(data.pomodoro_duration * 60);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user preferences:', error);
+    }
+  };
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       intervalRef.current = setInterval(() => {
@@ -41,6 +83,7 @@ const Timer: React.FC = () => {
 
   const handleTimerComplete = () => {
     setIsRunning(false);
+    setMusicPlaying(false);
     
     if (mode === 'pomodoro') {
       if (!isBreak) {
@@ -99,14 +142,19 @@ const Timer: React.FC = () => {
       Notification.requestPermission();
     }
     setIsRunning(true);
+    if (showMusicPlayer && userPreferences?.music_enabled) {
+      setMusicPlaying(true);
+    }
   };
 
   const pauseTimer = () => {
     setIsRunning(false);
+    setMusicPlaying(false);
   };
 
   const stopTimer = () => {
     setIsRunning(false);
+    setMusicPlaying(false);
     resetTimer();
   };
 
@@ -135,6 +183,57 @@ const Timer: React.FC = () => {
     ? (isBreak ? (5 * 60 - timeLeft) / (5 * 60) : (25 * 60 - timeLeft) / (25 * 60)) * 100
     : (customMinutes * 60 - timeLeft) / (customMinutes * 60) * 100;
 
+  const toggleMusicPlayer = () => {
+    setShowMusicPlayer(!showMusicPlayer);
+    if (!showMusicPlayer) {
+      setMusicPlaying(false);
+    }
+  };
+
+  const handleMusicPlayPause = () => {
+    setMusicPlaying(!musicPlaying);
+  };
+
+  const handleVolumeChange = async (volume: number) => {
+    setMusicVolume(volume);
+    
+    // Save to user preferences
+    if (user) {
+      try {
+        await supabase
+          .from('user_preferences')
+          .update({ music_volume: volume })
+          .eq('user_id', user.id);
+      } catch (error) {
+        console.error('Error saving volume preference:', error);
+      }
+    }
+  };
+
+  const handlePlaylistChange = async (playlist: Playlist) => {
+    setCurrentPlaylist(playlist);
+    
+    // Save to user preferences
+    if (user) {
+      try {
+        const { data: currentPrefs } = await supabase
+          .from('user_preferences')
+          .select('favorite_playlists')
+          .eq('user_id', user.id)
+          .single();
+
+        const favoritePlaylists = currentPrefs?.favorite_playlists || [];
+        const updatedPlaylists = [playlist, ...favoritePlaylists.filter((p: any) => p.id !== playlist.id)].slice(0, 5);
+
+        await supabase
+          .from('user_preferences')
+          .update({ favorite_playlists: updatedPlaylists })
+          .eq('user_id', user.id);
+      } catch (error) {
+        console.error('Error saving playlist preference:', error);
+      }
+    }
+  };
   return (
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
@@ -145,7 +244,7 @@ const Timer: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Timer Display */}
-          <div className="bg-slate-800 rounded-xl p-8">
+          <div className="bg-slate-800 rounded-xl p-8 space-y-6">
             <div className="text-center mb-8">
               <div className="relative w-64 h-64 mx-auto mb-6">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -225,6 +324,36 @@ const Timer: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* Music Player Toggle */}
+            <div className="flex items-center justify-center mb-4">
+              <button
+                onClick={toggleMusicPlayer}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 ${
+                  showMusicPlayer
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                <Music className="h-4 w-4" />
+                <span className="text-sm">
+                  {showMusicPlayer ? 'Hide Music' : 'Show Music'}
+                </span>
+              </button>
+            </div>
+
+            {/* Music Player */}
+            {showMusicPlayer && (
+              <MusicPlayer
+                isVisible={showMusicPlayer}
+                isPlaying={musicPlaying && isRunning}
+                onPlayPause={handleMusicPlayPause}
+                volume={musicVolume}
+                onVolumeChange={handleVolumeChange}
+                currentPlaylist={currentPlaylist}
+                onPlaylistChange={handlePlaylistChange}
+              />
+            )}
 
             {/* Timer Mode Selector */}
             <div className="flex space-x-2 mb-6">
