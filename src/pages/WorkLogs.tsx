@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Search, Filter, Calendar, Clock, Tag, Edit, Trash2 } from 'lucide-react';
 import { useWorkLogs, WorkLog } from '../contexts/WorkLogContext';
+import { useDebounce, usePerformance } from '../hooks/usePerformance';
 import WorkLogModal from '../components/WorkLogModal';
 import QuickLogWidget from '../components/QuickLogWidget';
+import VirtualizedWorkLogs from '../components/VirtualizedWorkLogs';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 
 const WorkLogs: React.FC = () => {
+  const { t } = useTranslation();
   const { workLogs, deleteWorkLog } = useWorkLogs();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQuickLogOpen, setIsQuickLogOpen] = useState(false);
@@ -14,6 +18,21 @@ const WorkLogs: React.FC = () => {
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [dateFilter, setDateFilter] = useState<string>('');
+
+  // Debounce search for performance
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Performance optimization for large datasets
+  const {
+    data: paginatedLogs,
+    loading,
+    hasMore,
+    loadMore,
+    totalCount
+  } = usePerformance(workLogs, {
+    pageSize: 20,
+    cacheKey: `worklogs-${debouncedSearchTerm}-${selectedType}-${selectedTag}-${dateFilter}`
+  });
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -93,8 +112,8 @@ const WorkLogs: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-100 mb-2">Work Logs</h1>
-            <p className="text-slate-400">Track and manage your daily work activities.</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">{t('workLog.title')}</h1>
+            <p className="text-slate-600 dark:text-slate-400">{t('workLog.subtitle')}</p>
           </div>
           <div className="flex items-center space-x-3">
             <button
@@ -102,56 +121,59 @@ const WorkLogs: React.FC = () => {
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
             >
               <Plus className="h-5 w-5" />
-              <span>Quick Log</span>
+              <span>{t('workLog.quickLog')}</span>
             </button>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+              className="bg-slate-600 hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
             >
-              <span>Detailed Log</span>
+              <span>{t('workLog.detailedLog')}</span>
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-slate-800 rounded-xl p-6 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 mb-6 border border-slate-200 dark:border-slate-700">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-400" />
               <input
                 type="text"
-                placeholder="Search work logs..."
+                placeholder={t('workLog.searchWorkLogs')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label={t('workLog.searchWorkLogs')}
               />
             </div>
 
             {/* Type Filter */}
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-400" />
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                aria-label={t('accessibility.filterBy')}
               >
-                <option value="">All Types</option>
+                <option value="">{t('workLog.allTypes')}</option>
                 {allTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
+                  <option key={type} value={type}>{t(`workLog.workTypes.${type.toLowerCase()}`)}</option>
                 ))}
               </select>
             </div>
 
             {/* Tag Filter */}
             <div className="relative">
-              <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-400" />
               <select
                 value={selectedTag}
                 onChange={(e) => setSelectedTag(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                aria-label={t('accessibility.filterBy')}
               >
-                <option value="">All Tags</option>
+                <option value="">{t('workLog.allTags')}</option>
                 {allTags.map(tag => (
                   <option key={tag} value={tag}>{tag}</option>
                 ))}
@@ -160,12 +182,13 @@ const WorkLogs: React.FC = () => {
 
             {/* Date Filter */}
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-400" />
               <input
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label={t('export.selectDateRange')}
               />
             </div>
           </div>
@@ -180,84 +203,57 @@ const WorkLogs: React.FC = () => {
                   setSelectedTag('');
                   setDateFilter('');
                 }}
-                className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors duration-200"
               >
-                Clear all filters
+                {t('workLog.clearFilters')}
               </button>
             </div>
           )}
         </div>
 
-        {/* Work Logs List */}
-        <div className="space-y-4">
-          {filteredLogs.length === 0 ? (
-            <div className="text-center py-12">
-              <Clock className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-300 mb-2">No work logs found</h3>
-              <p className="text-slate-400">
-                {workLogs.length === 0 
-                  ? "Start tracking your work by adding your first log."
-                  : "Try adjusting your filters or search terms."
-                }
-              </p>
-            </div>
-          ) : (
-            filteredLogs.map((log) => (
-              <div key={log.id} className="bg-slate-800 rounded-xl p-6 hover:bg-slate-750 transition-colors duration-200">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-slate-100">{log.title}</h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(log.type)}`}>
-                        {log.type}
-                      </span>
-                    </div>
+        {/* Performance Stats */}
+        {totalCount > 0 && (
+          <div className="mb-4 text-sm text-slate-600 dark:text-slate-400">
+            {t('performance.showingResults', { 
+              start: 1, 
+              end: Math.min(paginatedLogs.length, totalCount), 
+              total: totalCount 
+            })}
+          </div>
+        )}
 
-                    {log.description && (
-                      <p className="text-slate-400 mb-3">{log.description}</p>
-                    )}
+        {/* Virtualized Work Logs List */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+          <VirtualizedWorkLogs
+            workLogs={workLogs}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            searchTerm={debouncedSearchTerm}
+            selectedType={selectedType}
+            selectedTag={selectedTag}
+            dateFilter={dateFilter}
+          />
+        </div>
 
-                    <div className="flex items-center space-x-6 text-sm text-slate-500 mb-3">
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {formatDateTime(log.startTime)} - {formatDateTime(log.endTime)}
-                      </div>
-                      <span>•</span>
-                      <span className="font-medium">{formatDuration(log.duration)}</span>
-                    </div>
+        {/* Load More Button */}
+        {hasMore && (
+          <div className="text-center mt-6">
+            <button
+              onClick={loadMore}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors duration-200"
+            >
+              {loading ? t('performance.loadingMore') : t('common.loadMore')}
+            </button>
+          </div>
+        )}
 
-                    {log.tags.length > 0 && (
-                      <div className="flex items-center space-x-2">
-                        <Tag className="h-4 w-4 text-slate-500" />
-                        <div className="flex flex-wrap gap-1">
-                          {log.tags.map((tag, index) => (
-                            <span key={index} className="bg-slate-700 text-slate-300 px-2 py-1 rounded text-xs">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2 ml-4">
-                    <button
-                      onClick={() => handleEdit(log)}
-                      className="text-slate-400 hover:text-blue-400 p-2 hover:bg-slate-700 rounded-lg transition-colors duration-200"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(log.id)}
-                      className="text-slate-400 hover:text-red-400 p-2 hover:bg-slate-700 rounded-lg transition-colors duration-200"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+        {/* End of Results */}
+        {!hasMore && totalCount > 0 && (
+          <div className="text-center mt-6 text-sm text-slate-500 dark:text-slate-400">
+            {t('performance.endOfResults')}
+          </div>
+        )}
         </div>
 
         {/* Work Log Modal */}

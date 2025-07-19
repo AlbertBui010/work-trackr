@@ -2,45 +2,136 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom animations */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
+/* Base styles */
+@layer base {
+  html {
+    scroll-behavior: smooth;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  body {
+    @apply font-sans antialiased;
+  }
+  
+  /* Focus styles for accessibility */
+  *:focus {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  }
+  
+  .dark *:focus {
+    @apply ring-offset-slate-900;
   }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
+/* Component styles */
+@layer components {
+  /* Screen reader only */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  .sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+  
+  /* High contrast mode */
+  .high-contrast {
+    filter: contrast(150%) brightness(110%);
+  }
+  
+  /* Reduced motion */
+  .reduce-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-/* Keyboard shortcut styling */
-kbd {
-  @apply bg-slate-600 text-slate-200 px-1.5 py-0.5 rounded text-xs font-mono;
+/* Utility styles */
+@layer utilities {
+  /* Keyboard shortcut styling */
+  kbd {
+    @apply bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded text-xs font-mono border border-slate-300 dark:border-slate-500;
+  }
+
+  /* Timeline specific styles */
+  .timeline-hour {
+    height: 60px;
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-slate-100 dark:bg-slate-800;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-600 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-500;
+  }
+  
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+  
+  /* Loading states */
+  .loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  
+  .dark .loading-shimmer {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
 }
 
-/* Timeline specific styles */
-.timeline-hour {
-  height: 60px;
-}
-
-/* Custom scrollbar for timeline */
-.timeline-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.timeline-container::-webkit-scrollbar-track {
-  @apply bg-slate-800;
-}
-
-.timeline-container::-webkit-scrollbar-thumb {
-  @apply bg-slate-600 rounded-full;
-}
-
-.timeline-container::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-500;
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    @apply text-black bg-white;
+  }
 }
