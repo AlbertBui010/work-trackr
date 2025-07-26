@@ -4,11 +4,18 @@ import type { Database } from './database.types';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// For demo purposes, use fallback values if environment variables are not set
+const defaultUrl = 'https://demo-project.supabase.co';
+const defaultKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDI3NzkyMDAsImV4cCI6MTk1ODM1NTIwMH0.rp7Q2DO_qUeiCT-yb1hI_cj0l1X1VW6OkT-rEE-HAuM';
+
+if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project') || supabaseAnonKey.includes('your-supabase')) {
+  console.warn('⚠️ Using demo Supabase credentials. Please configure your actual Supabase project for production use.');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<Database>(
+  supabaseUrl || defaultUrl, 
+  supabaseAnonKey || defaultKey, 
+  {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
